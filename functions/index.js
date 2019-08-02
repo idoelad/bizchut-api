@@ -3,6 +3,10 @@ const nodemailer = require('nodemailer');
 
 
 exports.formSubmittion = functions.https.onRequest((request, response) => {
+    if (request.method === 'OPTIONS') {
+        response.send();
+        return;
+    }
     if (request.method !== 'POST') {
         response.status(400).send('Only POST calls are allowed')
     }
