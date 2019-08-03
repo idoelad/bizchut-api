@@ -37,6 +37,7 @@ const keyMap = {
     'phone': 'טלפון',
     'email': 'כתובת אימייל',
     'relation': 'הקשר למוסד',
+    'details': 'פרטים',
 
 };
 
@@ -65,11 +66,14 @@ const getSubject = function(type) {
         case 'complaint':
             hebrewType = 'תלונה פרטנית';
             break;
+        case 'community-housing':
+            hebrewType = 'יציאה לדיור בקהילה';
+            break;
         default:
             hebrewType = 'סוג טופס לא ידוע';
             break;
     }
-    return 'מערכת מוסדות - התקבל טופס חדש: '+hebrewType;
+    return 'מערכת מוסדות - התקבלה פניה חדשה: '+hebrewType;
 };
 
 const getAttachment = function(name, data) {
@@ -132,7 +136,7 @@ const sendEmail = function (subject, html, attachments) {
     });
 
     const mailOptions = {
-        from: '"Bizchut - Mosadot" <'+gmailEmail+'>',
+        from: '"בזכות - מוסדות" <'+gmailEmail+'>',
         to: gmailEmail,
         subject: subject,
         html: html,
