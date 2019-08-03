@@ -64,7 +64,10 @@ const getSubject = function(type) {
             hebrewType = 'יפוי כח';
             break;
         case 'complaint':
-            hebrewType = 'תלונה על אירוע ספציפי';
+            hebrewType = 'דיווח על אירוע ספציפי';
+            break;
+        case 'report':
+            hebrewType = 'שאלון על תנאים במסגרת';
             break;
         case 'community-housing':
             hebrewType = 'יציאה לדיור בקהילה';
