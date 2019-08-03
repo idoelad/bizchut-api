@@ -20,7 +20,7 @@ exports.formSubmittion = functions.https.onRequest((request, response) => {
     if (!request.body.data) {
         response.status(400).send("Missing field: 'data'");
     }
-    console.log('submission received');
+    console.log('submission received: type: '+request.body.type+' | body: '+JSON.stringify(request.body.data));
     sendForm(request.body.type, request.body.data);
     response.send(JSON.stringify({success: true}));
 });
@@ -48,11 +48,17 @@ const transKey = function(englishKey) {
     return englishKey;
 };
 
-const stringPartsToHtml = function(stringParts) {
+const getHtml = function(results) {
     let html = "<table align='right' dir='rtl'>";
-    for (const [key, value] of Object.entries(stringParts)) {
+    for (const [key, value] of Object.entries(results.stringParts)) {
         html = html + "<tr><td>"+transKey(key)+":</td><td style='padding-right: 4px;'>"+value+"</td>";
     }
+    results.sections.forEach(function(section) {
+        html = html + "<tr style='height: 4px;'><td><b>"+section.category+"</b></td></tr>";
+        for (const [question, answer] of Object.entries(section.questions)) {
+            html = html + "<tr><td>"+question+":</td><td style='padding-right: 4px;'>"+answer+"</td>";
+        }
+    });
     html = html+"</table>";
     return html;
 };
@@ -92,7 +98,18 @@ const handleValue = function(key, value, results) {
     if (!value) {
         value = '';
     }
-    console.log(key, JSON.stringify(value), typeof value);
+    if (key === 'categoryDetails') {
+        return;
+    }
+    if (key === 'questions') {
+        for (let [category, categoryQuestions] of Object.entries(value)) {
+            results.sections.push({
+                category: category,
+                questions: categoryQuestions
+            });
+        }
+        return;
+    }
     if (typeof value === 'object') {
         value.forEach(function(valuePart) {
             let fileName, data;
@@ -105,23 +122,27 @@ const handleValue = function(key, value, results) {
             }
             results.attachments.push(getAttachment(fileName, data));
         });
-    } else if (value.startsWith('data:')) {
-        results.attachments.push(getAttachment(key, value));
-    } else {
-        results.stringParts[key] = value;
+        return;
     }
+    if (value.startsWith('data:')) {
+        results.attachments.push(getAttachment(key, value));
+        return;
+    }
+    results.stringParts[key] = value;
+
 };
 
 const sendForm = function(type, jsonData) {
     let results = {
         stringParts: {},
-        attachments: []
+        attachments: [],
+        sections: []
     };
     for (let [key, value] of Object.entries(jsonData)) {
         handleValue(key, value, results);
     }
     const subject = getSubject(type);
-    const html = stringPartsToHtml(results.stringParts);
+    const html = getHtml(results);
     sendEmail(subject, html, results.attachments);
 };
 
