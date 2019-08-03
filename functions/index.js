@@ -29,8 +29,8 @@ const keyMap = {
     'firstName': 'שם פרטי',
     'lastName': 'שם משפחה',
     'id': 'תעודת זהות',
-    'instituteType': 'סוג המוסד',
-    'instituteName': 'שם המוסד',
+    'instituteType': 'סוג המסגרת',
+    'instituteName': 'שם המסגרת',
     'instituteAddress': 'כתובת המוסד',
     'whatHappened': 'מה קרה',
     'name': 'שם',
@@ -64,7 +64,7 @@ const getSubject = function(type) {
             hebrewType = 'יפוי כח';
             break;
         case 'complaint':
-            hebrewType = 'תלונה פרטנית';
+            hebrewType = 'תלונה על אירוע ספציפי';
             break;
         case 'community-housing':
             hebrewType = 'יציאה לדיור בקהילה';
