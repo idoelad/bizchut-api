@@ -1,8 +1,8 @@
 const functions = require('firebase-functions');
 const nodemailer = require('nodemailer');
 const cors = require('cors')({origin: true});
-// const admin = require('firebase-admin');
-// admin.initializeApp(functions.config().firebase);
+const admin = require('firebase-admin');
+admin.initializeApp();
 
 
 exports.formSubmittion = functions.https.onRequest((request, response) => {
@@ -20,6 +20,7 @@ exports.formSubmittion = functions.https.onRequest((request, response) => {
     if (!request.body.data) {
         response.status(400).send("Missing field: 'data'");
     }
+    console.log('submission received');
     sendForm(request.body.type, request.body.data);
     response.send(JSON.stringify({success: true}));
 });
@@ -28,6 +29,14 @@ const keyMap = {
     'firstName': 'שם פרטי',
     'lastName': 'שם משפחה',
     'id': 'תעודת זהות',
+    'instituteType': 'סוג המוסד',
+    'instituteName': 'שם המוסד',
+    'instituteAddress': 'כתובת המוסד',
+    'whatHappened': 'מה קרה',
+    'name': 'שם',
+    'phone': 'טלפון',
+    'email': 'כתובת אימייל',
+    'relation': 'הקשר למוסד',
 
 };
 
@@ -53,6 +62,9 @@ const getSubject = function(type) {
         case 'PowerOfAttorney':
             hebrewType = 'יפוי כח';
             break;
+        case 'complaint':
+            hebrewType = 'תלונה פרטנית';
+            break;
         default:
             hebrewType = 'סוג טופס לא ידוע';
             break;
@@ -60,24 +72,50 @@ const getSubject = function(type) {
     return 'מערכת מוסדות - התקבל טופס חדש: '+hebrewType;
 };
 
+const getAttachment = function(name, data) {
+    const format = data.split(/data.+?\//)[1].split(';')[0];
+    return {
+        filename: name+'.'+format,
+        content: data.split("base64,")[1],
+        encoding: 'base64'
+    };
+};
+
+const handleValue = function(key, value, results) {
+    if (!value) {
+        value = '';
+    }
+    console.log(key, JSON.stringify(value), typeof value);
+    if (typeof value === 'object') {
+        value.forEach(function(valuePart) {
+            let fileName, data;
+            if (valuePart['imagePreviewUrl']) {
+                fileName = 'image';
+                data = valuePart['imagePreviewUrl'];
+            } else {
+                fileName = 'recording';
+                data = valuePart['blob'];
+            }
+            results.attachments.push(getAttachment(fileName, data));
+        });
+    } else if (value.startsWith('data:')) {
+        results.attachments.push(getAttachment(key, value));
+    } else {
+        results.stringParts[key] = value;
+    }
+};
+
 const sendForm = function(type, jsonData) {
-    let stringParts = {};
-    let attachments = [];
-    for (const [key, value] of Object.entries(jsonData)) {
-        if (value.startsWith('data:image/')) {
-            const format = value.split('data:image/')[1].split(';')[0];
-            attachments.push({
-                filename: key+'.'+format,
-                content: value.split("base64,")[1],
-                encoding: 'base64'
-            });
-        } else {
-            stringParts[key] = value;
-        }
+    let results = {
+        stringParts: {},
+        attachments: []
+    };
+    for (let [key, value] of Object.entries(jsonData)) {
+        handleValue(key, value, results);
     }
     const subject = getSubject(type);
-    const html = stringPartsToHtml(stringParts);
-    sendEmail(subject, html, attachments);
+    const html = stringPartsToHtml(results.stringParts);
+    sendEmail(subject, html, results.attachments);
 };
 
 //https://github.com/firebase/functions-samples/blob/master/email-confirmation/functions/index.js
