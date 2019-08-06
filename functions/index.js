@@ -26,9 +26,9 @@ exports.formSubmittion = functions.https.onRequest((request, response) => {
 });
 
 const keyMap = {
-    'firstName': 'שם פרטי',
-    'lastName': 'שם משפחה',
-    'id': 'תעודת זהות',
+    // 'firstName': 'שם פרטי',
+    // 'lastName': 'שם משפחה',
+    // 'id': 'תעודת זהות',
     'instituteType': 'סוג המסגרת',
     'instituteName': 'שם המסגרת',
     'instituteAddress': 'כתובת המוסד',
@@ -48,7 +48,23 @@ const transKey = function(englishKey) {
     return englishKey;
 };
 
-const getHtml = function(results) {
+const getHtml = function(type, results) {
+    if (type === 'PowerOfAttorney') {
+        return '<div align=\'right\' dir=\'rtl\'>'+
+            'אני, '+
+            results.stringParts['firstName'] + ' '+results.stringParts['lastName']+
+            '<br>'+
+            'תעודת זהות: '+results.stringParts['id']+
+            '<br>'+
+            'מייפה את כוחן של נעמה לרנר, יקירה אברך,צביה שפירו- וייסברג ותמי גרוס, עובדות עמותת "בזכות" המרכז לזכויות אדם של אנשים עם מוגבלויות, [1], ' +
+            'לסייע לי בנוגע למיצוי הזכוית שלי במסגרת המגורים/אשפוז שלי, להיפגש איתי לצורך הסיוע,' +
+            'לפנות אליכם בכתב או בעל פה בעבורי ובשמי בענייני, וכן לבקש ולקבל בשמי כל מידע הנוגע אלי, בעל פה או בכתב, ככל שיידרש על ידיהם בעניין זה. בחתימתי להלן,' +
+            ' יש לראות גם אישור בקשר לפטור שאנוכי נותן/ת לכם מכל חובות סודיות שחלה עליכם ו/או שתחול עליכם לפי כל חוק ו/או דין.'+
+            '<br>'+
+            'חתימה:'+
+            '<br>'+
+            '<img src="cid:signature"/></div>';
+    }
     let html = "<table align='right' dir='rtl'>";
     for (const [key, value] of Object.entries(results.stringParts)) {
         html = html + "<tr><td>"+transKey(key)+":</td><td style='padding-right: 4px;'>"+value+"</td>";
@@ -90,7 +106,8 @@ const getAttachment = function(name, data) {
     return {
         filename: name+'.'+format,
         content: data.split("base64,")[1],
-        encoding: 'base64'
+        encoding: 'base64',
+        cid: name
     };
 };
 
@@ -124,7 +141,7 @@ const handleValue = function(key, value, results) {
         });
         return;
     }
-    if (value.startsWith('data:')) {
+    if (value.startsWith('data:')) { //Signature only
         results.attachments.push(getAttachment(key, value));
         return;
     }
@@ -142,7 +159,8 @@ const sendForm = function(type, jsonData) {
         handleValue(key, value, results);
     }
     const subject = getSubject(type);
-    const html = getHtml(results);
+    const html = getHtml(type, results);
+    console.log(html);
     sendEmail(subject, html, results.attachments);
 };
 
