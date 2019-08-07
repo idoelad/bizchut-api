@@ -149,6 +149,24 @@ const handleValue = function(key, value, results) {
 
 };
 
+const isEmptyValuesArray = function(array) {
+    for (const object in array) {
+        if (!isEmptyValuesObject(object)) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const isEmptyValuesObject = function(object) {
+    for (let [key, value] of Object.entries(object)) {
+        if (value) {
+            return false;
+        }
+    }
+    return true;
+};
+
 const sendForm = function(type, jsonData) {
     let results = {
         stringParts: {},
@@ -157,6 +175,10 @@ const sendForm = function(type, jsonData) {
     };
     for (let [key, value] of Object.entries(jsonData)) {
         handleValue(key, value, results);
+    }
+    if (isEmptyValuesObject(results.stringParts) && isEmptyValuesArray(results.attachments) && isEmptyValuesArray(results.sections)) {
+        console.log('Empty form');
+        return;
     }
     const subject = getSubject(type);
     const html = getHtml(type, results);
